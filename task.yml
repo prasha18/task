@@ -1,0 +1,42 @@
+
+- hosts:  jenkins gitlab jira
+  remote_user:  ec2-user
+  become: yes
+  tasks:
+  - name: Add repository jenkins
+    yum_repository:
+      name: jenkins
+      description:  jen YUM repo
+      baseurl:  http://pkg.jenkins.io/redhat-stable
+      gpgkey: http://pkg.jenkins.io/redhat-stable/jenkins.io.key
+  - name: install the latest version of jenkins
+    yum:
+      name: jenkins
+      state:  present
+  - name: start service jenkins, if not started
+    service:
+      name: jenkins
+      state:  started
+  - name: Add GitLab repository
+    yum_repository:
+      repo: 'deb https://packages.gitlab.com/gitlab/gitlab-ce/ubuntu/ xenial main'
+      state: present
+      filename: 'gitlab'
+  - name: Install GitLab
+    yum:
+      name: gitlab-ce
+      state: present
+  - name: Download Jira archive
+    get_url:
+      url: 'https://www.atlassian.com/software/jira/downloads/binary/atlassian-jira-software-8.17.0.tar.gz'
+      dest: /opt/jira.tar.gz
+  - name: Extract Jira files
+    unarchive:
+      src:  /opt/jira.tar.gz
+      dest: /opt
+      remote_src: yes
+      mode: "777"
+  - name: Set up Jira configurations
+    template:
+      src:  /home/ec2-user/jira-config.j2
+      dest: /opt/atlassian/jira/conf/server.xml
